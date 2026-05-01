@@ -42,7 +42,7 @@ export default function Home() {
           Launch Dashboard
         </Link>
         <Link
-          href="https://github.com/healos/healosbench"
+          href="https://github.com/Satwik290/healosbench"
           target="_blank"
           className={buttonVariants({ size: "lg", variant: "outline" }) + " h-14 px-8 text-lg font-bold rounded-2xl transition-all hover:bg-muted"}
         >
