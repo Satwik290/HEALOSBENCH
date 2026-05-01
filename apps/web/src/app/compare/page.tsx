@@ -128,29 +128,40 @@ function CompareContent() {
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Efficiency Comparison</CardTitle>
+            <Card className="border-2 border-primary/20 shadow-lg">
+              <CardHeader className="bg-primary/5 border-b">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingUpIcon className="w-5 h-5 text-primary" />
+                  Efficiency & Cost
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <CompareRow label="Avg. Cost / Case" val1={run1.costUsd / run1.totalCases} val2={run2.costUsd / run2.totalCases} format={(v: number) => `$${v.toFixed(4)}`} inverse />
-                <CompareRow label="Total Tokens" val1={run1.tokensInput + run1.tokensOutput} val2={run2.tokensInput + run2.tokensOutput} inverse />
-                <CompareRow label="Cache Hit Rate" val1={run1.tokensCacheRead / (run1.tokensInput + run1.tokensCacheRead)} val2={run2.tokensCacheRead / (run2.tokensInput + run2.tokensCacheRead)} isPercentage />
+              <CardContent className="space-y-4 pt-6">
+                <CompareRow label="Avg. Cost / Case" val1={run1.costUsd / run1.totalCases} val2={run2.costUsd / run2.totalCases} format={(v: number) => `$${v.toFixed(5)}`} inverse showWinner />
+                <CompareRow label="Cache Hit Rate" val1={run1.tokensCacheRead / (run1.tokensInput + run1.tokensCacheRead)} val2={run2.tokensCacheRead / (run2.tokensInput + run2.tokensCacheRead)} isPercentage showWinner />
+                <CompareRow label="Total Tokens" val1={run1.tokensInput + run1.tokensOutput} val2={run2.tokensInput + run2.tokensOutput} inverse showWinner />
               </CardContent>
             </Card>
             
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Summary</CardTitle>
+            <Card className="flex flex-col border-2 border-green-500/20 shadow-lg overflow-hidden">
+              <CardHeader className="bg-green-500/5 border-b">
+                <CardTitle className="text-lg">Strategic Winner</CardTitle>
               </CardHeader>
-              <CardContent className="flex flex-col items-center justify-center h-full">
+              <CardContent className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-green-500/5 to-transparent">
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-2">Strategy Winner</p>
-                  <p className="text-4xl font-black text-primary">
+                  <div className="inline-block px-3 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full mb-4 border border-green-200 uppercase tracking-widest">
+                    Best Overall Performance
+                  </div>
+                  <p className="text-5xl font-black text-primary tracking-tighter mb-2">
                     {stats2.totalF1 > stats1.totalF1 ? run2.strategy.toUpperCase() : run1.strategy.toUpperCase()}
                   </p>
-                  <p className="text-sm mt-4 text-muted-foreground max-w-[200px]">
-                    {run2.strategy.toUpperCase()} is {Math.abs(((stats2.totalF1 - stats1.totalF1) / stats1.totalF1) * 100).toFixed(1)}% {stats2.totalF1 > stats1.totalF1 ? "better" : "worse"} than {run1.strategy.toUpperCase()}
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <span>Performance Delta:</span>
+                    <span className={`font-bold ${stats2.totalF1 > stats1.totalF1 ? "text-green-600" : "text-destructive"}`}>
+                      {stats2.totalF1 > stats1.totalF1 ? "+" : "-"}{Math.abs(((stats2.totalF1 - stats1.totalF1) / stats1.totalF1) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <p className="text-xs mt-6 text-muted-foreground/60 max-w-[250px] italic">
+                    Based on aggregate F1 score across all clinical extraction fields.
                   </p>
                 </div>
               </CardContent>

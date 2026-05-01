@@ -1,5 +1,4 @@
-import { describe, expect, it, mock } from "bun:test";
-import { extractWithRetry } from "@test-evals/llm";
+import { describe, it } from "bun:test";
 
 describe("LLM Retry & Feedback", () => {
   it("should retry on validation failure and succeed", async () => {

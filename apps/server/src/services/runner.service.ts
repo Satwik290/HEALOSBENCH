@@ -22,7 +22,7 @@ export async function getCachedCaseByTranscriptId(id: string) {
 }
 
 // Helper to hash prompt strategy configuration
-function getPromptHash(strategy: Strategy): string {
+export function getPromptHash(strategy: Strategy): string {
   const config = STRATEGIES[strategy];
   return crypto.createHash("sha256").update(JSON.stringify(config)).digest("hex");
 }
@@ -83,7 +83,7 @@ async function processRun(runId: string, cases: any[], strategy: Strategy, model
   const promises = cases.map(async (testCase) => {
     try {
       // Check Idempotency: is there already a success for this transcript & hash?
-      let existing = [];
+      let existing: any[] = [];
       if (!force) {
         existing = await db.select().from(caseResults)
           .where(and(
@@ -94,16 +94,13 @@ async function processRun(runId: string, cases: any[], strategy: Strategy, model
       }
         
       let generation;
-      let evalResult;
       let costIncrement = 0;
       
       const firstExisting = existing[0];
       if (firstExisting) {
         // Idempotent cache hit, skip LLM call
         const [gen] = await db.select().from(generations).where(eq(generations.caseResultId, firstExisting.id));
-        const [ev] = await db.select().from(evaluations).where(eq(evaluations.caseResultId, firstExisting.id));
         generation = gen;
-        evalResult = ev;
       } else {
         // Run LLM
         const result = await runExtractionForCase(testCase.transcript, strategy, model);
@@ -120,7 +117,7 @@ async function processRun(runId: string, cases: any[], strategy: Strategy, model
         }).returning();
         
         if (!cr) throw new Error("Failed to create case result");
-
+ 
         const [gen] = await db.insert(generations).values({
           caseResultId: cr.id,
           rawOutput: result.output,
@@ -132,7 +129,7 @@ async function processRun(runId: string, cases: any[], strategy: Strategy, model
           trace: result.trace,
         }).returning();
         
-        const [ev] = await db.insert(evaluations).values({
+        await db.insert(evaluations).values({
           caseResultId: cr.id,
           schemaValid: true, // If we reached here, zod parsed it
           hallucinationsCount: evaluation.hallucinationsCount,
@@ -140,7 +137,6 @@ async function processRun(runId: string, cases: any[], strategy: Strategy, model
         }).returning();
         
         generation = gen;
-        evalResult = ev;
         
         // Cost calc (Haiku 3.5 pricing approx)
         costIncrement = (result.tokensInput * 0.25 + result.tokensOutput * 1.25) / 1000000;

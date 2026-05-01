@@ -1,12 +1,10 @@
 import { parseArgs } from "util";
 import path from "path";
 import dotenv from "dotenv";
+import { spawn } from "child_process";
 
-// Load environment variables before importing anything else
+// Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), "apps/server/.env") });
-
-import { startRun, getRun, getRunCases } from "../apps/server/src/services/runner.service";
-import { Strategy } from "@test-evals/llm";
 
 async function main() {
   const { values } = parseArgs({
@@ -15,46 +13,101 @@ async function main() {
       strategy: { type: "string", default: "zero_shot" },
       model: { type: "string", default: "claude-3-5-haiku-20241022" },
       limit: { type: "string" },
+      serverUrl: { type: "string", default: "http://localhost:8787" },
     },
     strict: false,
   });
 
-  const strategy = values.strategy as Strategy;
+  const strategy = values.strategy as string;
   const model = values.model as string;
-  const limit = values.limit ? parseInt(values.limit) : undefined;
+  const limit = typeof values.limit === "string" ? parseInt(values.limit) : undefined;
+  const serverUrl = values.serverUrl as string;
 
-  console.log(`\n🚀 Starting Evaluation Run`);
+  console.log(`\n🚀 HEALOSBENCH CLI Evaluation`);
   console.log(`----------------------------`);
   console.log(`Strategy: ${strategy}`);
   console.log(`Model:    ${model}`);
   if (limit) console.log(`Limit:    ${limit} cases`);
+  console.log(`Server:   ${serverUrl}`);
   console.log(`----------------------------\n`);
 
-  try {
-    const run = await startRun(strategy, model, limit);
-    console.log(`Run created: ${run.id}\n`);
+  let serverProcess: any = null;
 
+  try {
+    // Check if server is already running
+    let isServerUp = false;
+    try {
+      const res = await fetch(`${serverUrl}/api/v1/runs`, { method: "GET" });
+      if (res.ok) isServerUp = true;
+    } catch (e) {}
+
+    if (!isServerUp) {
+      console.log(`📦 Starting server process...`);
+      serverProcess = spawn("bun", ["run", "apps/server/src/index.ts"], {
+        cwd: process.cwd(),
+        env: { ...process.env, PORT: "8787" },
+        stdio: "ignore"
+      });
+
+      // Poll until ready
+      let attempts = 0;
+      while (attempts < 20) {
+        try {
+          const res = await fetch(`${serverUrl}/api/v1/runs`, { method: "GET" });
+          if (res.ok) {
+            isServerUp = true;
+            break;
+          }
+        } catch (e) {}
+        await new Promise(r => setTimeout(r, 500));
+        attempts++;
+      }
+
+      if (!isServerUp) throw new Error("Server failed to start on port 8787");
+      console.log(`✅ Server ready\n`);
+    } else {
+      console.log(`🔗 Connected to existing server at ${serverUrl}\n`);
+    }
+
+    // Start run
+    const startRes = await fetch(`${serverUrl}/api/v1/runs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ strategy, model, dataset_filter: limit })
+    });
+    
+    if (!startRes.ok) throw new Error(`Failed to start run: ${await startRes.text()}`);
+    const run = (await startRes.json()) as any;
+    console.log(`Run ID: ${run.id}\n`);
+
+    // Poll for completion
     let completed = false;
     while (!completed) {
-      const currentRun = await getRun(run.id);
-      if (!currentRun) break;
-
-      process.stdout.write(`\rProgress: ${currentRun.completedCases} / ${currentRun.totalCases} [${Math.round((currentRun.completedCases / currentRun.totalCases) * 100)}%]`);
+      const runRes = await fetch(`${serverUrl}/api/v1/runs/${run.id}`);
+      const currentRun = (await runRes.json()) as any;
+      
+      const progress = Math.round((currentRun.completedCases / currentRun.totalCases) * 100);
+      process.stdout.write(`\rProgress: ${currentRun.completedCases} / ${currentRun.totalCases} [${progress}%]`);
 
       if (currentRun.status === "completed" || currentRun.status === "failed") {
         completed = true;
-        console.log(`\n\nRun ${currentRun.status}!`);
+        console.log(`\n\nRun ${currentRun.status.toUpperCase()}!`);
         
-        const cases = await getRunCases(run.id);
+        const casesRes = await fetch(`${serverUrl}/api/v1/runs/${run.id}/cases`);
+        const cases = (await casesRes.json()) as any[];
         printSummary(currentRun, cases);
         break;
       }
-
       await new Promise(r => setTimeout(r, 1000));
     }
   } catch (error: any) {
     console.error(`\n❌ Error: ${error.message}`);
     process.exit(1);
+  } finally {
+    if (serverProcess) {
+      console.log(`\n🛑 Stopping server process...`);
+      serverProcess.kill();
+    }
   }
 }
 
@@ -64,29 +117,30 @@ function printSummary(run: any, cases: any[]) {
   console.log(`Total Cases:  ${run.totalCases}`);
   console.log(`Duration:    ${(run.durationMs / 1000).toFixed(1)}s`);
   console.log(`Total Cost:  $${run.costUsd.toFixed(4)}`);
-  console.log(`Total Tokens: ${run.tokensInput + run.tokensOutput}`);
+  console.log(`Cache Read:  ${run.tokensCacheRead.toLocaleString()} tokens`);
+  console.log(`Total Tokens: ${(run.tokensInput + run.tokensOutput).toLocaleString()}`);
   console.log(``);
 
   const fields = ["chief_complaint", "vitals", "medications", "diagnoses", "plan", "follow_up"];
-  const validCases = cases.filter(c => c.evaluation);
+  const validCases = cases.filter((c: any) => c.evaluation);
   
   console.log(`Field Performance (Avg F1/Accuracy)`);
   console.log(`----------------------------------`);
   
   fields.forEach(f => {
-    const total = validCases.reduce((acc, curr) => acc + (curr.evaluation?.fieldScores?.[f] || 0), 0);
+    const total = validCases.reduce((acc: number, curr: any) => acc + (curr.evaluation?.fieldScores?.[f] || 0), 0);
     const avg = validCases.length > 0 ? total / validCases.length : 0;
     console.log(`${f.padEnd(20)}: ${(avg * 100).toFixed(1)}%`);
   });
 
-  const totalF1 = fields.reduce((acc, f) => {
-    const total = validCases.reduce((a, c) => a + (c.evaluation?.fieldScores?.[f] || 0), 0);
+  const totalF1 = fields.reduce((acc: number, f: string) => {
+    const total = validCases.reduce((a: number, c: any) => a + (c.evaluation?.fieldScores?.[f] || 0), 0);
     return acc + (validCases.length > 0 ? total / validCases.length : 0);
   }, 0) / fields.length;
 
   console.log(`----------------------------------`);
   console.log(`${"OVERALL F1".padEnd(20)}: ${(totalF1 * 100).toFixed(1)}%`);
-  console.log(`\nDone. View full details at http://localhost:3001/runs/${run.id}\n`);
+  console.log(`\n✅ View full details at http://localhost:3001/runs/${run.id}\n`);
 }
 
 main();

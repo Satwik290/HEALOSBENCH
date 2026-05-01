@@ -46,7 +46,6 @@ app.post("/api/v1/runs", async (c) => {
   
   if (!strategy) return c.json({ error: "Strategy is required" }, 400);
   
-  const hasAnthropic = env.ANTHROPIC_API_KEY && !env.ANTHROPIC_API_KEY.includes("placeholder");
 
   const defaultModel = "claude-3-5-haiku-20241022";
   
