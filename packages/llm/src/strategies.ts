@@ -76,7 +76,7 @@ export const STRATEGIES: Record<Strategy, StrategyConfig> = {
   few_shot: {
     systemPrompt: `You are a clinical documentation assistant. Extract the requested clinical information from the transcript. Adhere strictly to the requested schema.
 
-Example:
+Example 1:
 Transcript: "Patient complains of headache for 3 days. BP 120/80. Temp 98.6. Took Tylenol 500mg twice daily with no relief. Assessment: Tension headache. Plan: Rest, continue Tylenol, follow up in 7 days if no improvement."
 Output:
 {
@@ -86,6 +86,30 @@ Output:
   "diagnoses": [{ "description": "Tension headache" }],
   "plan": ["Rest", "continue Tylenol"],
   "follow_up": { "interval_days": 7, "reason": "if no improvement" }
+}
+
+Example 2:
+Transcript: "65yo male with chest pain. BP is 150/95, pulse 88. Saturation 94% on room air. History of hypertension. Started on Aspirin 81mg daily. To be admitted for observation."
+Output:
+{
+  "chief_complaint": "chest pain",
+  "vitals": { "bp": "150/95", "hr": 88, "temp_f": null, "spo2": 94 },
+  "medications": [{ "name": "Aspirin", "dose": "81mg", "frequency": "daily", "route": "PO" }],
+  "diagnoses": [{ "description": "Chest pain, suspected cardiac" }, { "description": "Hypertension" }],
+  "plan": ["Admit for observation"],
+  "follow_up": { "interval_days": null, "reason": "Admission" }
+}
+
+Example 3:
+Transcript: "Well-child visit. 4 year old girl. Weight 16kg. Temp 37C (98.6F). Healthy. Plan: Vaccinations given (MMR, Varicella). Return in 1 year."
+Output:
+{
+  "chief_complaint": "well-child visit",
+  "vitals": { "bp": null, "hr": null, "temp_f": 98.6, "spo2": null },
+  "medications": [{ "name": "MMR vaccine", "dose": null, "frequency": "once", "route": "IM" }, { "name": "Varicella vaccine", "dose": null, "frequency": "once", "route": "IM" }],
+  "diagnoses": [{ "description": "Well-child examination" }],
+  "plan": ["Administer vaccinations"],
+  "follow_up": { "interval_days": 365, "reason": "annual visit" }
 }
 
 Now process the user's transcript.`,

@@ -7,6 +7,21 @@ import { spawn } from "child_process";
 dotenv.config({ path: path.resolve(process.cwd(), "apps/server/.env") });
 
 async function main() {
+  const envPath = path.resolve(process.cwd(), "apps/server/.env");
+  const envExamplePath = path.resolve(process.cwd(), "apps/server/.env.example");
+
+  if (!await Bun.file(envPath).exists()) {
+    if (await Bun.file(envExamplePath).exists()) {
+      console.log(`⚠️  .env not found in apps/server. Copying from .env.example...`);
+      const exampleContent = await Bun.file(envExamplePath).text();
+      await Bun.write(envPath, exampleContent);
+      console.log(`✅ Created apps/server/.env. Please update it with your ANTHROPIC_API_KEY.\n`);
+    } else {
+      console.error(`❌ Error: apps/server/.env not found and no .env.example exists.`);
+      process.exit(1);
+    }
+  }
+
   const { values } = parseArgs({
     args: Bun.argv.slice(2),
     options: {
@@ -25,6 +40,23 @@ async function main() {
 
   console.log(`\n🚀 HEALOSBENCH CLI Evaluation`);
   console.log(`----------------------------`);
+
+  // Ensure DB is pushed
+  console.log(`📂 Ensuring database schema is up to date...`);
+  const dbPush = spawn("bun", ["run", "db:push"], {
+    stdio: "inherit"
+  });
+
+  await new Promise((resolve) => {
+    dbPush.on("close", (code) => {
+      if (code !== 0) {
+        console.warn(`⚠️  Warning: db:push exited with code ${code}. The evaluation might fail if the database is not ready.`);
+      }
+      resolve(null);
+    });
+  });
+  console.log(``);
+
   console.log(`Strategy: ${strategy}`);
   console.log(`Model:    ${model}`);
   if (limit) console.log(`Limit:    ${limit} cases`);
@@ -63,7 +95,12 @@ async function main() {
         attempts++;
       }
 
-      if (!isServerUp) throw new Error("Server failed to start on port 8787");
+      if (!isServerUp) {
+        console.error(`\n❌ Error: Server failed to start on port 8787.`);
+        console.error(`   Make sure your DATABASE_URL is correct in apps/server/.env and that your database is running.`);
+        console.error(`   If using Docker, run: docker-compose up -d\n`);
+        throw new Error("Server failed to start");
+      }
       console.log(`✅ Server ready\n`);
     } else {
       console.log(`🔗 Connected to existing server at ${serverUrl}\n`);

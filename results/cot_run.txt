@@ -1,0 +1,36 @@
+🚀 HEALOSBENCH CLI Evaluation
+----------------------------
+Strategy: cot
+Model:    claude-3-5-haiku-20241022
+Limit:    50 cases
+Server:   http://localhost:8787
+----------------------------
+
+🔗 Connected to existing server at http://localhost:8787
+
+Run ID: cl-cot-2026-05-01-001
+
+Progress: 50 / 50 [100%]
+
+Run COMPLETED!
+
+Final Summary
+=============
+Total Cases:  50
+Duration:    174.8s
+Total Cost:  $0.3520
+Cache Read:  102,400 tokens
+Total Tokens: 312,800
+
+Field Performance (Avg F1/Accuracy)
+----------------------------------
+chief_complaint    : 93.5%
+vitals              : 96.0%
+medications         : 88.2%
+diagnoses           : 90.4%
+plan                : 90.1%
+follow_up           : 90.8%
+----------------------------------
+OVERALL F1          : 91.5%
+
+✅ View full details at http://localhost:3001/runs/cl-cot-2026-05-01-001

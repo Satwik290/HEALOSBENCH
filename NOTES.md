@@ -12,6 +12,11 @@
 | **Avg. Latency / Case** | **1.2s** | 1.8s | 3.4s |
 | **Total Run Cost** | **$0.14** | $0.22 | $0.35 |
 | **Cache Hit Rate** | 88% | 92% | 91% |
+| **CLI Log Output** | [zero_shot_run.txt](file:///results/zero_shot_run.txt) | [few_shot_run.txt](file:///results/few_shot_run.txt) | [cot_run.txt](file:///results/cot_run.txt) |
+
+> [!NOTE]
+> Detailed per-case logs and full CLI summaries for each strategy are available in the `results/` directory at the repository root.
+
 
 ---
 
