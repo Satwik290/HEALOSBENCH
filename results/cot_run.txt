@@ -1,4 +1,4 @@
-🚀 HEALOSBENCH CLI Evaluation
+ HEALOSBENCH CLI Evaluation
 ----------------------------
 Strategy: cot
 Model:    claude-3-5-haiku-20241022
@@ -6,7 +6,7 @@ Limit:    50 cases
 Server:   http://localhost:8787
 ----------------------------
 
-🔗 Connected to existing server at http://localhost:8787
+ Connected to existing server at http://localhost:8787
 
 Run ID: cl-cot-2026-05-01-001
 
@@ -33,4 +33,4 @@ follow_up           : 90.8%
 ----------------------------------
 OVERALL F1          : 91.5%
 
-✅ View full details at http://localhost:3001/runs/cl-cot-2026-05-01-001
+View full details at http://localhost:3001/runs/cl-cot-2026-05-01-001
