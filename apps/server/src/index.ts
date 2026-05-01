@@ -47,13 +47,8 @@ app.post("/api/v1/runs", async (c) => {
   if (!strategy) return c.json({ error: "Strategy is required" }, 400);
   
   const hasAnthropic = env.ANTHROPIC_API_KEY && !env.ANTHROPIC_API_KEY.includes("placeholder");
-  const hasGemini = env.GEMINI_API_KEY && !env.GEMINI_API_KEY.includes("here");
 
-  const defaultModel = hasAnthropic 
-    ? "claude-3-5-haiku-20241022" 
-    : hasGemini 
-      ? "gemini-1.5-flash" 
-      : "claude-3-5-haiku-20241022";
+  const defaultModel = "claude-3-5-haiku-20241022";
   
   const run = await startRun(strategy, model || defaultModel, dataset_filter, force === true);
   return c.json(run);

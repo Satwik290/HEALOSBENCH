@@ -9,7 +9,6 @@ export const env = createEnv({
     BETTER_AUTH_URL: z.url(),
     CORS_ORIGIN: z.url(),
     ANTHROPIC_API_KEY: z.string().optional(),
-    GEMINI_API_KEY: z.string().optional(),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   },
   runtimeEnv: process.env,
