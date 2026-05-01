@@ -1,0 +1,13 @@
+{
+  "extends": "@test-evals/config/tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@test-evals/db": ["./packages/db/src"],
+      "@test-evals/llm": ["./packages/llm/src"],
+      "@test-evals/shared": ["./packages/shared/src"],
+      "@test-evals/env/*": ["./packages/env/src/*"],
+      "@test-evals/ui/*": ["./packages/ui/src/*"]
+    }
+  }
+}
